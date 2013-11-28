@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cliente</title>
+</head>
+<body>
+    <input type="text" placeholder="Digite o nome..."><br>
+    <button>Rastrear</button>
+</body>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script type="text/javascript">
+
+    // depois de um boilerplate básico de HTML5, vamos ao que interessa
+    window.addEventListener('load', function(){
+
+        // conectando ao servidor logo após carregar todo o documento
+        // troque para o endereço do seu servidor
+        var socket = io.connect('http://localhost');
+
+        // interagindo com elementos do DOM
+        var button = document.getElementsByTagName('button')[0];
+        var input = document.getElementsByTagName('input')[0];
+
+        // função principal responsável por adquirir a posição
+        var position = function(nome){
+            return function(){
+                if(navigator && navigator.geolocation)
+
+                    // esta é a API que eu falei, coisa simples de uma linha
+                    navigator.geolocation.getCurrentPosition(function(pos){
+                        var packet = {
+                            nome: nome,
+                            pos: pos.coords.latitude + ',' + pos.coords.longitude
+                        };
+
+                        // vamos emitir nossa posição junto com nosso nome
+                        socket.emit('posicao', packet);
+                        console.log('Enviado', packet);
+                    });
+                else
+                    console.log('Este aparelho não tem suporte à GPS :(');
+            }
+        };
+
+        // quando alguém clicar no botão, iniciamos a transmissão
+        button.addEventListener('click', function(e){
+            if(!input.value)
+                return alert('Digite um nome...');
+
+            button.style.display = 'none';
+            input.disabled = 'disabled';
+
+            // um intervalo de 1 segundo que fica chamado o
+            // retorno da função position
+            setInterval(position(input.value), 1000);
+
+            // impedir que a página role ou que troquemos de página
+            e.preventDefault();
+            return false;
+        });
+    });
+</script>
+</html>

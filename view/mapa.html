@@ -1,0 +1,71 @@
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Mapa de rastreamento</title>
+    <style>
+        html, body, #map-canvas {
+            height: 100%;
+            margin: 0px;
+            padding: 0px
+        }
+    </style>
+</head>
+<body>
+    <div id="map-canvas"></div>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script>
+        window.addEventListener('load', function(){
+
+            // um objeto para guardar todos os clients que
+            // se comunicam com a gente
+            var markers = {};
+
+            // novamente não esqueçam de trocar para o endereço
+            // do seu servidor :)
+            var socket = io.connect('http://localhost');
+
+            // uma variável que usaremos para centralizar o mapa mais tarde
+            var first = true;
+
+            // estou conectado, "Sr. Servidor, eu sou um mapa."
+            socket.emit('mapa');
+
+            // iniciando a API de mapas do Google.
+            var map = new google.maps.Map(document.getElementById('map-canvas'));
+
+            // escutar pelo evento 'posicao'
+            socket.on('posicao', function(data){
+
+                // vamos gerar uma geolocalização compatível com os mapas
+                // do Google a partir dos dados recebidos
+                var split = data.pos.split(',');
+                var latlon = new google.maps.LatLng(split[0], split[1]);
+
+                // se essa for a primeira vez que recebemos uma localização
+                // devemos centralizar o mapa nesta localização
+                if(first){
+                    map.setCenter(latlon);
+                    map.setZoom(16);
+                    first = false;
+                };
+
+                // procurando se um marcador com essa posição já foi criado
+                if(!markers[data.id])
+
+                    // nenhum marcador com esse id foi criado
+                    // precisamos criar um usando a API do Google Maps.
+                    markers[data.id] = new google.maps.Marker({
+                        position: latlon,
+                        map: map,
+                        title: data.nome
+                    });
+                else
+                    // ele já foi criado, é só mudar a posição dele
+                    markers[data.id].setPosition(latlon);
+            });
+        });
+    </script>
+</body>
+</html>
